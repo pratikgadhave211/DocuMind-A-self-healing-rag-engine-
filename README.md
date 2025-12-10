@@ -15,9 +15,7 @@
 
 </div>
 
----
-
-## 🎯 Overview
+## Overview
 
 This project implements a **production-ready Self-Healing RAG system** that goes beyond traditional retrieval-augmented generation. Unlike standard RAG's fragile open-loop architecture, this system implements closed-loop feedback at every stage to autonomously detect and correct errors.
 
@@ -38,9 +36,7 @@ A self-healing system with:
 - ✅ **Cross-Encoder Reranking**: Precision document scoring
 - ✅ **Dynamic Learning**: Learn from successful query-answer pairs
 
----
-
-## 🚀 Features
+## Features
 
 ### Query Enhancement
 - **HyDE (Hypothetical Document Embeddings)**: Improves recall by 15-30%
@@ -68,9 +64,7 @@ A self-healing system with:
 - **Statistics Dashboard**: System performance metrics
 - **Technical Documentation**: Comprehensive guides
 
----
-
-## 🏗️ Architecture
+## Architecture
 
 ### System Components
 
@@ -141,7 +135,7 @@ A self-healing system with:
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 - Python 3.10+
@@ -181,7 +175,7 @@ cd ..
 
 ---
 
-## 🎮 Usage
+## Usage
 
 ### Quick Start
 
@@ -238,7 +232,7 @@ Technical:
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Backend Configuration
 
@@ -281,7 +275,7 @@ All techniques can be toggled in the Playground UI:
 
 ---
 
-## 📚 Technical Deep Dive
+## Technical Deep Dive
 
 ### 1. HyDE (Hypothetical Document Embeddings)
 
@@ -385,7 +379,7 @@ prompt = f"{examples}\n\nQuestion: {new_query}\nAnswer:"
 
 ---
 
-## 🎯 Performance Metrics
+## Performance Metrics
 
 ### Benchmark Results
 
@@ -412,7 +406,7 @@ prompt = f"{examples}\n\nQuestion: {new_query}\nAnswer:"
 
 ---
 
-## 🛠️ API Reference
+## API Reference
 
 ### Query Endpoint
 
@@ -479,7 +473,7 @@ GET /api/statistics
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Unit Tests
 
@@ -506,7 +500,7 @@ npm run test
 
 ---
 
-## 📈 Production Deployment
+## Production Deployment
 
 ### Recommendations
 
@@ -523,9 +517,7 @@ npm run test
 docker-compose up -d
 ```
 
----
-
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Areas for improvement:
 
@@ -535,27 +527,12 @@ Contributions are welcome! Areas for improvement:
 - [ ] Multi-language support
 - [ ] Fine-tuning cross-encoders on domain data
 
----
-
-## 📄 License
+## License
 
 MIT License - see LICENSE file for details
 
----
 
-## 🙏 Acknowledgments
-
-Built with:
-- **LlamaIndex**: RAG framework and HyDE implementation
-- **LangChain/LangGraph**: CRAG workflow orchestration
-- **Sentence-Transformers**: Cross-encoder models
-- **OpenAI**: GPT-4o-mini for generation and grading (fast & cost-effective)
-- **React + TailwindCSS**: Modern UI framework
-- **Mermaid**: Architecture diagrams
-
----
-
-## 📞 Support
+## Support
 
 For questions or issues:
 - Create an issue on GitHub
