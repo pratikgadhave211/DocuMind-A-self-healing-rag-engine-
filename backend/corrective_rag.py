@@ -8,13 +8,14 @@ If documents are deemed irrelevant, the system triggers alternative retrieval st
 from typing import List, TypedDict, Literal
 from langchain_core.prompts import PromptTemplate
 from langchain_core.documents import Document
-from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_openai import ChatOpenAI
+from langchain_tavily import TavilySearch
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langgraph.graph import END, StateGraph, START
-
+from langgraph.checkpoint.memory import MemorySaver
+from pydantic import BaseModel
 
 # --- State Definition ---
-class GraphState(TypedDict):
+class GraphState(BaseModel):
     """State for CRAG workflow"""
     question: str
     generation: str
@@ -22,7 +23,7 @@ class GraphState(TypedDict):
     documents: List[Document]
 
 
-class GradeScore(TypedDict):
+class GradeScore(BaseModel):
     """Binary relevance score"""
     score: Literal["yes", "no"]
 
@@ -32,8 +33,8 @@ class CRAGSystem:
     
     def __init__(
         self,
-        grader_model: str = "gpt-4o-mini",
-        generator_model: str = "gpt-4o-mini",
+        grader_model: str = "meta/llama-3.1-8b-instruct",
+        generator_model: str = "meta/llama-3.1-8b-instruct",
         web_search_enabled: bool = True,
         tavily_api_key: str = None
     ):
@@ -46,14 +47,17 @@ class CRAGSystem:
             web_search_enabled: Whether to enable web search fallback
             tavily_api_key: API key for Tavily search (optional)
         """
-        self.grader_llm = ChatOpenAI(model=grader_model, temperature=0)
-        self.generator_llm = ChatOpenAI(model=generator_model, temperature=0)
+        self.grader_llm = ChatNVIDIA(model=grader_model, temperature=0)
+        self.generator_llm = ChatNVIDIA(model=generator_model, temperature=0)
         self.web_search_enabled = web_search_enabled
         
         if web_search_enabled and tavily_api_key:
-            self.web_tool = TavilySearchResults(k=3, api_key=tavily_api_key)
+            self.web_tool = TavilySearch(max_results=3, api_key=tavily_api_key)
         else:
             self.web_tool = None
+            
+        # Initialize MemorySaver
+        self.memory = MemorySaver()
         
         # Build graph
         self.app = self._build_graph()
@@ -69,26 +73,24 @@ class CRAGSystem:
             Updated state with filtered documents
         """
         print("---CHECK DOCUMENT RELEVANCE---")
-        question = state["question"]
-        documents = state["documents"]
+        question = state.question
+        documents = state.documents
         
         # Structured output for binary classification
         structured_llm = self.grader_llm.with_structured_output(GradeScore)
         
         prompt = PromptTemplate(
-            template="""You are a grader assessing relevance of a retrieved document to a user question.
+            template="""You are a grader assessing the relevance of a retrieved document to a user query.
             
 Document: {context}
 
-Question: {question}
+Query: {question}
 
-Evaluate if the document contains information relevant to answering the question.
+Evaluate if the document contains useful context or evidence related to the user's query. It does not need to answer the question completely on its own, but it should provide relevant information.
 
 Return JSON with a single key 'score':
-- 'yes': Document is relevant and useful for answering the question
-- 'no': Document is not relevant or useful
-
-Be strict in your evaluation.""",
+- 'yes': Document provides useful context or evidence for the query.
+- 'no': Document is completely irrelevant or off-topic.""",
             input_variables=["context", "question"],
         )
         chain = prompt | structured_llm
@@ -103,7 +105,7 @@ Be strict in your evaluation.""",
                     "context": d.page_content
                 })
                 
-                if grade.get('score') == 'yes':
+                if grade.score == 'yes':
                     print(f"  ✓ Document relevant")
                     filtered_docs.append(d)
                 else:
@@ -118,7 +120,7 @@ Be strict in your evaluation.""",
             "documents": filtered_docs,
             "question": question,
             "web_search": web_search,
-            "generation": state.get("generation", "")
+            "generation": getattr(state, "generation", "")
         }
     
     def transform_query(self, state: GraphState) -> GraphState:
@@ -132,15 +134,15 @@ Be strict in your evaluation.""",
             Updated state with rewritten query
         """
         print("---TRANSFORM QUERY FOR WEB SEARCH---")
-        question = state["question"]
+        question = state.question
         
         prompt = PromptTemplate(
-            template="""Rewrite the following question to make it more effective for web search.
-Make it clear, specific, and optimized for search engines.
+            template="""Rewrite the following query to make it more effective for semantic vector search within a local document database.
+Extract the core intent and keywords. Do not optimize for web search engines, optimize for finding relevant text chunks in documents.
 
-Original question: {question}
+Original query: {question}
 
-Rewritten question:""",
+Rewritten query:""",
             input_variables=["question"]
         )
         
@@ -152,9 +154,9 @@ Rewritten question:""",
         
         return {
             "question": better_q,
-            "documents": state["documents"],
-            "web_search": state["web_search"],
-            "generation": state.get("generation", "")
+            "documents": state.documents,
+            "web_search": state.web_search,
+            "generation": getattr(state, "generation", "")
         }
     
     def web_search_node(self, state: GraphState) -> GraphState:
@@ -171,10 +173,15 @@ Rewritten question:""",
         
         if not self.web_tool:
             print("  ⚠ Web search not available")
-            return state
+            return {
+                "documents": state.documents,
+                "question": state.question,
+                "web_search": state.web_search,
+                "generation": getattr(state, "generation", "")
+            }
         
         try:
-            docs = self.web_tool.invoke({"query": state["question"]})
+            docs = self.web_tool.invoke({"query": state.question})
             web_results = [
                 Document(page_content=d["content"], metadata={"source": "web"})
                 for d in docs
@@ -183,14 +190,19 @@ Rewritten question:""",
             
             # Append web results to existing documents
             return {
-                "documents": state["documents"] + web_results,
-                "question": state["question"],
-                "web_search": state["web_search"],
-                "generation": state.get("generation", "")
+                "documents": state.documents + web_results,
+                "question": state.question,
+                "web_search": state.web_search,
+                "generation": getattr(state, "generation", "")
             }
         except Exception as e:
             print(f"  ⚠ Web search error: {e}")
-            return state
+            return {
+                "documents": state.documents,
+                "question": state.question,
+                "web_search": state.web_search,
+                "generation": getattr(state, "generation", "")
+            }
     
     def generate(self, state: GraphState) -> GraphState:
         """
@@ -204,8 +216,8 @@ Rewritten question:""",
         """
         print("---GENERATE ANSWER---")
         
-        question = state["question"]
-        documents = state["documents"]
+        question = state.question
+        documents = state.documents
         
         # Combine document content
         context = "\n\n".join([doc.page_content for doc in documents[:5]])
@@ -227,9 +239,9 @@ Answer:""",
         answer = chain.invoke({"context": context, "question": question}).content
         
         return {
-            "question": state["question"],
-            "documents": state["documents"],
-            "web_search": state["web_search"],
+            "question": state.question,
+            "documents": state.documents,
+            "web_search": state.web_search,
             "generation": answer
         }
     
@@ -243,7 +255,7 @@ Answer:""",
         Returns:
             Next node name
         """
-        if state["web_search"] == "Yes":
+        if state.web_search == "Yes":
             print("  → Triggering web search")
             return "transform_query"
         else:
@@ -277,15 +289,16 @@ Answer:""",
         workflow.add_edge("web_search_node", "generate")
         workflow.add_edge("generate", END)
         
-        return workflow.compile()
+        return workflow.compile(checkpointer=self.memory)
     
-    def run(self, question: str, documents: List[Document]) -> dict:
+    def run(self, question: str, documents: List[Document], thread_id: str = "default") -> dict:
         """
         Run CRAG pipeline
         
         Args:
             question: User question
             documents: Retrieved documents to grade
+            thread_id: Thread ID for memory saver checkpointing
             
         Returns:
             Final state with answer
@@ -297,5 +310,6 @@ Answer:""",
             documents=documents
         )
         
-        result = self.app.invoke(initial_state)
+        config = {"configurable": {"thread_id": thread_id}}
+        result = self.app.invoke(initial_state, config=config)
         return result

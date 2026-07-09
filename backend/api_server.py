@@ -6,9 +6,13 @@ Provides REST API and WebSocket endpoints for the RAG system
 
 import os
 import sys
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+
+
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import asyncio
@@ -18,9 +22,9 @@ import traceback
 # Load environment variables
 load_dotenv()
 
+
 # Import RAG system
 from self_healing_rag import SelfHealingRAGSystem
-from reranker import BiEncoderVsCrossEncoderDemo
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -38,6 +42,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount frontend directory for static files (to be created)
+import os
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+os.makedirs(frontend_dir, exist_ok=True)
+app.mount("/app", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
+
 # Global RAG system instance
 rag_system: Optional[SelfHealingRAGSystem] = None
 
@@ -45,6 +56,8 @@ rag_system: Optional[SelfHealingRAGSystem] = None
 # Pydantic models
 class QueryRequest(BaseModel):
     query: str
+    session_id: str = "default"
+    manual_override: bool = False
     enable_hyde: bool = True
     enable_decomposition: bool = True
     enable_crag: bool = True
@@ -58,8 +71,7 @@ class FeedbackRequest(BaseModel):
     is_positive: bool
 
 
-class DocumentUpload(BaseModel):
-    documents: List[str]
+
 
 
 # Startup event
@@ -72,18 +84,18 @@ async def startup_event():
     
     try:
         # Get API key from environment
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        if not openai_api_key:
-            print("⚠️  WARNING: OPENAI_API_KEY not found in environment")
-        
+        nvidia_api_key = os.getenv("NVIDIA_API_KEY")
+        if not nvidia_api_key:
+            print("⚠️  WARNING: NVIDIA_API_KEY not found in environment")
+        tavily_api_key = os.getenv("TAVILY_API_KEY")
+
         # Initialize system
         rag_system = SelfHealingRAGSystem(
-            openai_api_key=openai_api_key,
-            enable_web_search=False  # Disable by default (requires Tavily key)
+            nvidia_api_key=nvidia_api_key,
+            tavily_api_key=tavily_api_key,
+            enable_web_search=bool(tavily_api_key)
         )
-        
-        # Load sample documents
-        rag_system.load_sample_documents()
+
         
         print("✅ RAG System initialized successfully!")
         
@@ -103,10 +115,7 @@ async def root():
         "endpoints": {
             "query": "/api/query",
             "feedback": "/api/feedback",
-            "statistics": "/api/statistics",
-            "upload": "/api/upload",
-            "architecture": "/api/architecture",
-            "websocket": "/ws"
+            "upload_file": "/api/upload-file"
         }
     }
 
@@ -150,11 +159,13 @@ async def query_rag(request: QueryRequest):
     try:
         result = rag_system.process_query(
             query=request.query,
+            manual_override=request.manual_override,
             enable_decomposition=request.enable_decomposition,
             enable_hyde=request.enable_hyde,
             enable_crag=request.enable_crag,
             enable_reranking=request.enable_reranking,
-            enable_learning=request.enable_learning
+            enable_learning=request.enable_learning,
+            thread_id=request.session_id
         )
         
         return JSONResponse(content=result)
@@ -195,169 +206,48 @@ async def submit_feedback(request: FeedbackRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/statistics")
-async def get_statistics():
+
+@app.post("/api/upload-file")
+async def upload_file(file: UploadFile = File(...)):
     """
-    Get system performance statistics
+    Upload a file (PDF, DOCX, PPTX, HTML, TXT) to the RAG system.
+    """
+    import os, tempfile
     
-    Returns:
-        Statistics dictionary
-    """
     if rag_system is None:
         raise HTTPException(status_code=503, detail="RAG system not initialized")
-    
-    try:
-        stats = rag_system.get_statistics()
-        learning_stats = rag_system.learning_manager.get_example_stats()
-        
-        return {
-            "system_stats": stats,
-            "learning_stats": learning_stats
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
+    allowed_exts = [".pdf", ".docx", ".pptx", ".html", ".htm", ".txt"]
+    ext = os.path.splitext(file.filename.lower())[1]
+    if ext not in allowed_exts:
+        raise HTTPException(status_code=400, detail=f"Unsupported file format. Allowed: {', '.join(allowed_exts)}")
 
-@app.post("/api/upload")
-async def upload_documents(request: DocumentUpload):
-    """
-    Upload custom documents to the RAG system
-    
-    Args:
-        request: Document upload request
-        
-    Returns:
-        Confirmation
-    """
-    if rag_system is None:
-        raise HTTPException(status_code=503, detail="RAG system not initialized")
-    
     try:
-        rag_system.load_documents(request.documents)
-        
+        # Save upload to a temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        chunks = rag_system.load_file(tmp_path, original_filename=file.filename)
+
         return {
             "status": "success",
-            "message": f"Loaded {len(request.documents)} documents",
-            "document_count": len(request.documents)
+            "filename": file.filename,
+            "chunks_loaded": chunks,
+            "message": f"Indexed {chunks} chunks from '{file.filename}'",
         }
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/architecture")
-async def get_architecture_info():
-    """
-    Get architecture information and comparisons
-    
-    Returns:
-        Architecture details
-    """
-    try:
-        bi_vs_cross = BiEncoderVsCrossEncoderDemo.explain_difference()
-        
-        return {
-            "encoder_comparison": bi_vs_cross,
-            "pipeline_stages": {
-                "1_query_enhancement": {
-                    "techniques": ["HyDE", "Query Decomposition"],
-                    "purpose": "Transform raw queries into optimal retrieval requests"
-                },
-                "2_retrieval": {
-                    "techniques": ["Vector Search", "Bi-Encoder"],
-                    "purpose": "Fast semantic recall of candidate documents"
-                },
-                "3_validation": {
-                    "techniques": ["CRAG", "Relevance Grading"],
-                    "purpose": "Filter irrelevant documents, trigger fallback"
-                },
-                "4_reranking": {
-                    "techniques": ["Cross-Encoder"],
-                    "purpose": "Precision scoring for final document selection"
-                },
-                "5_generation": {
-                    "techniques": ["Dynamic Few-Shot", "LLM Generation"],
-                    "purpose": "Generate accurate answer from validated context"
-                },
-                "6_learning": {
-                    "techniques": ["Feedback Loop", "Example Storage"],
-                    "purpose": "Continuous improvement from successful interactions"
-                }
-            }
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# WebSocket endpoint for real-time query processing
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for streaming query results
-    
-    Clients can send queries and receive real-time updates
-    """
-    await websocket.accept()
-    
-    if rag_system is None:
-        await websocket.send_json({
-            "type": "error",
-            "message": "RAG system not initialized"
-        })
-        await websocket.close()
-        return
-    
-    try:
-        while True:
-            # Receive query from client
-            data = await websocket.receive_json()
-            
-            query = data.get("query", "")
-            config = data.get("config", {})
-            
-            if not query:
-                await websocket.send_json({
-                    "type": "error",
-                    "message": "Empty query"
-                })
-                continue
-            
-            # Send processing started event
-            await websocket.send_json({
-                "type": "processing_started",
-                "query": query
-            })
-            
-            try:
-                # Process query
-                result = rag_system.process_query(
-                    query=query,
-                    enable_decomposition=config.get("enable_decomposition", True),
-                    enable_hyde=config.get("enable_hyde", True),
-                    enable_crag=config.get("enable_crag", True),
-                    enable_reranking=config.get("enable_reranking", True),
-                    enable_learning=config.get("enable_learning", True)
-                )
-                
-                # Send result
-                await websocket.send_json({
-                    "type": "result",
-                    "data": result
-                })
-                
-            except Exception as e:
-                await websocket.send_json({
-                    "type": "error",
-                    "message": str(e)
-                })
-                
-    except WebSocketDisconnect:
-        print("WebSocket client disconnected")
-    except Exception as e:
-        print(f"WebSocket error: {e}")
         traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+
 
 
 if __name__ == "__main__":

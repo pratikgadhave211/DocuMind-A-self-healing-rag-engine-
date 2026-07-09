@@ -1,57 +1,32 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-ENV/
-env/
-*.egg-info/
-dist/
-build/
-
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# Environment
+# Environments
 .env
-.env.local
-.env.*.local
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Dependencies
+node_modules/
 
-# OS
+# OS/IDE files
 .DS_Store
-Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.gemini/
 
-# Logs
-logs/
+# Confidential / Unwanted
+ponytail/
+frontend-react/
+demo.py
+architecure.svg
+
+# Data/Outputs
+faiss_index/
 *.log
-
-# Build outputs
-frontend/dist/
-frontend/build/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Temporary
-*.tmp
-*.temp
-.cache/

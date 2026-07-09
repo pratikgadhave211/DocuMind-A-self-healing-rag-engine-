@@ -13,7 +13,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
 from dotenv import load_dotenv
-from self_healing_rag import SelfHealingRAGSystem
+from backend.self_healing_rag import SelfHealingRAGSystem
 
 # Load environment
 load_dotenv()
@@ -28,7 +28,7 @@ def main():
     # Initialize system
     print("🔧 Initializing system...")
     system = SelfHealingRAGSystem(
-        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        nvidia_api_key=os.getenv("NVIDIA_API_KEY"),
         enable_web_search=False
     )
     

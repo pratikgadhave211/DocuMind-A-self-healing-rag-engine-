@@ -5,7 +5,7 @@ Breaks down complex queries into atomic sub-queries that can be
 individually processed and then combined for comprehensive answers.
 """
 
-from langchain_openai import ChatOpenAI
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 from typing import List
@@ -19,7 +19,7 @@ class SubQueries(BaseModel):
 class QueryDecomposer:
     """Decomposes complex queries into simpler sub-queries"""
     
-    def __init__(self, model: str = "gpt-4o-mini", temperature: float = 0):
+    def __init__(self, model: str = "meta/llama-3.1-8b-instruct", temperature: float = 0):
         """
         Initialize query decomposer
         
@@ -27,7 +27,7 @@ class QueryDecomposer:
             model: LLM model to use for planning
             temperature: Temperature for generation (0 for deterministic)
         """
-        self.llm = ChatOpenAI(model=model, temperature=temperature)
+        self.llm = ChatNVIDIA(model=model, temperature=temperature)
         
         system_prompt = """You are an expert researcher. Break down the user's complex query 
 into simple, atomic sub-queries that a search engine can answer independently.
@@ -87,7 +87,7 @@ Guidelines:
 
 
 # Convenience function
-def plan_query(query: str, model: str = "gpt-4o-mini") -> List[str]:
+def plan_query(query: str, model: str = "meta/llama-3.1-8b-instruct") -> List[str]:
     """
     Quick function to decompose a query
     

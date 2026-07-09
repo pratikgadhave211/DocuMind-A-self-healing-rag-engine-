@@ -1,0 +1,45 @@
+# Core RAG Framework
+llama-index
+llama-index-llms-langchain
+llama-index-embeddings-huggingface
+pydantic
+# LangChain for CRAG
+langchain
+langchain-community<0.4.0
+langchain-openai  # required by llama-index-llms-langchain internal bridge (not used for inference)
+langchain-nvidia-ai-endpoints
+langgraph
+llama_index.embeddings.huggingface
+# Reranking
+sentence-transformers
+langchain-huggingface
+# Vector Database
+faiss-cpu
+
+# PDF Parsing
+pypdf
+
+# Web Search
+tavily-python
+
+# DSPy for optimization
+dspy-ai
+
+# API Server
+fastapi
+uvicorn
+websockets
+python-multipart
+
+# Utilities
+python-dotenv
+pydantic
+aiofiles
+
+# Frontend Build
+httpx
+
+# Additional Parsers
+beautifulsoup4
+python-pptx
+python-docx
