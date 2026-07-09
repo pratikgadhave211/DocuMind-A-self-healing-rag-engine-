@@ -5,6 +5,29 @@ A highly advanced, self-correcting Retrieval-Augmented Generation (RAG) system b
 ## Architecture
 
 DocuMind uses a robust pipeline to ensure high accuracy and resilience:
+
+```mermaid
+graph TD
+    A[User Query] --> B{Query Enhancement}
+    B -->|Decomposition| C[Sub-queries]
+    B -->|HyDE| D[Hypothetical Answers]
+    C --> E[(FAISS Vector Store)]
+    D --> E
+    A -->|Direct Search| E
+    E --> F[Retrieved Candidate Chunks]
+    F --> G{CRAG Validation}
+    G -->|Irrelevant| H[Web Search Fallback]
+    H --> I[Web Results]
+    G -->|Relevant| J[Cross-Encoder Reranking]
+    I --> J
+    J --> K[Top-K High Precision Docs]
+    K --> L{Dynamic Few-Shot Learning}
+    L -->|Inject Similar Past Successes| M[LLM Generator]
+    M --> N[Final Answer]
+    N --> O((User Feedback))
+    O -->|Thumbs Up| L
+```
+
 1. **Query Enhancement**: Applies Hypothetical Document Embeddings (HyDE) and Query Decomposition to break down complex questions into optimal vector search vectors.
 2. **FAISS Retrieval**: High-speed, local vector search using `BAAI/bge-small-en-v1.5` embeddings to retrieve candidate chunks.
 3. **CRAG (Corrective RAG)**: Self-healing validation mechanism. A grader model verifies candidate relevance. If results are poor, it triggers query rewriting or web search fallbacks.
