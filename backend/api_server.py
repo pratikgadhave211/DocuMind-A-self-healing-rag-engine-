@@ -256,11 +256,12 @@ if __name__ == "__main__":
     print("🌟 Starting Self-Healing RAG API Server...")
     print("📚 Loading environment variables...")
     
+    import os
     # Run server
     uvicorn.run(
         "api_server:app",
         host="0.0.0.0",
-        port=8000,
+        port=int(os.environ.get("PORT", 8000)),
         reload=True,
         log_level="info"
     )
