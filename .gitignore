@@ -23,9 +23,6 @@ node_modules/
 
 # Confidential / Unwanted
 ponytail/
-frontend-react/
-demo.py
-architecure.svg
 
 # Data/Outputs
 faiss_index/

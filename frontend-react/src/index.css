@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  --bg-color: #C6AFA1; /* Warm taupe background */
+  --app-bg: #FDFBF7; /* Cream white for the main app card */
+  --sidebar-bg: #F4EFE7; /* Light beige for sidebar */
+  --border-color: #EBE5DC; /* Soft divider color */
+  --text-main: #483933; /* Dark espresso brown */
+  --text-muted: #8A7B72; /* Lighter brown for secondary text */
+  
+  --accent-orange: #F57D5C; /* Vibrant coral/orange */
+  --accent-green: #8BA067; /* Olive green */
+  
+  --user-msg: #514036; /* Solid dark brown */
+  --bot-msg: #EBE5DC; /* Light taupe */
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
