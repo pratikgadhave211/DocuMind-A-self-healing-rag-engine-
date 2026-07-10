@@ -23,7 +23,7 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_nvidia_ai_endpoints import ChatNVIDIA, NVIDIAEmbeddings
 
 # PDF parsing
 from pypdf import PdfReader
@@ -110,7 +110,12 @@ class SelfHealingRAGSystem:
 
         # ── Embedding model ───────────────────────────────────────────────────
         print("  📦 Loading embedding model…")
-        self.embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL_NAME)
+        try:
+            self.embeddings = NVIDIAEmbeddings(api_key=os.getenv("NVIDIA_API_KEY"), truncate="END")
+        except Exception as e:
+            print(f"⚠️  NVIDIA Embeddings failed, falling back to local: {e}")
+            self.embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL_NAME)
+            
         Settings.embed_model = LangchainEmbedding(self.embeddings)
 
         # ── Text splitter ─────────────────────────────────────────────────────
