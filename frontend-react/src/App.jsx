@@ -189,6 +189,7 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [inputQuery, setInputQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [config, setConfig] = useState({
     manual_override: false,
     enable_decomposition: true,
@@ -227,6 +228,7 @@ export default function App() {
     if (saved) {
       setMessages(JSON.parse(saved));
     }
+    setIsSidebarOpen(false);
   };
 
   // ── Initialise session + memory ─────────────────────────────────────────
@@ -336,10 +338,15 @@ export default function App() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen bg-[var(--bg-color)] p-2 md:p-4 items-center justify-center font-sans">
-      <div className="w-full h-full flex flex-row rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(72,57,51,0.2)] bg-[var(--app-bg)]">
+      <div className="w-full h-full flex flex-row rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(72,57,51,0.2)] bg-[var(--app-bg)] relative">
+
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div className="absolute inset-0 bg-black/20 z-10 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className="w-80 bg-[var(--sidebar-bg)] border-r border-[var(--border-color)] flex flex-col flex-shrink-0">
+      <aside className={`w-72 md:w-80 bg-[var(--sidebar-bg)] border-r border-[var(--border-color)] flex flex-col flex-shrink-0 absolute md:relative z-20 h-full transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         {/* Header */}
         <div className="p-7 border-b border-[var(--border-color)]">
           <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2.5">
@@ -434,8 +441,19 @@ export default function App() {
 
       {/* ── Chat area ────────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0 bg-[var(--app-bg)] relative">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-[var(--border-color)] bg-[var(--app-bg)] z-10 shadow-sm">
+          <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-[var(--text-main)] active:scale-95 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+          <span className="font-extrabold tracking-tight flex items-center gap-1.5 text-lg">
+            <span className="text-[var(--accent-orange)]">Docu</span><span className="text-[var(--accent-green)]">Mind</span>
+          </span>
+          <div className="w-8"></div>
+        </div>
+
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-8 md:px-12 space-y-7">
+        <div className="flex-1 overflow-y-auto px-4 py-6 md:px-12 space-y-7">
           {messages.map((msg) => (
             <div
               key={msg.id}
