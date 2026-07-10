@@ -8,24 +8,26 @@ DocuMind uses a robust pipeline to ensure high accuracy and resilience:
 
 ```mermaid
 graph TD
-    A[User Query] --> B{Query Enhancement}
-    B -->|Decomposition| C[Sub-queries]
-    B -->|HyDE| D[Hypothetical Answers]
-    C --> E[(FAISS Vector Store)]
-    D --> E
-    A -->|Direct Search| E
-    E --> F[Retrieved Candidate Chunks]
-    F --> G{CRAG Validation}
-    G -->|Irrelevant| H[Web Search Fallback]
-    H --> I[Web Results]
-    G -->|Relevant| J[Cross-Encoder Reranking]
-    I --> J
-    J --> K[Top-K High Precision Docs]
-    K --> L{Dynamic Few-Shot Learning}
-    L -->|Inject Similar Past Successes| M[LLM Generator]
-    M --> N[Final Answer]
-    N --> O((User Feedback))
-    O -->|Thumbs Up| L
+    subgraph DocuMind [DocuMind Self-Healing RAG Engine]
+        A[User Query] --> B{Query Enhancement}
+        B -->|Decomposition| C[Sub-queries]
+        B -->|HyDE| D[Hypothetical Answers]
+        C --> E[(NVIDIA Embeddings + FAISS)]
+        D --> E
+        A -->|Direct Search| E
+        E --> F[Retrieved Candidate Chunks]
+        F --> G{CRAG Validation}
+        G -->|Irrelevant| H[Web Search Fallback]
+        H --> I[Web Results]
+        G -->|Relevant| J[Cross-Encoder Reranking]
+        I --> J
+        J --> K[Top-K High Precision Docs]
+        K --> L{Dynamic Few-Shot Learning}
+        L -->|Inject Similar Past Successes| M[LLM Generator]
+        M --> N[Final Answer]
+        N --> O((User Feedback))
+        O -->|Thumbs Up| L
+    end
 ```
 
 1. **Query Enhancement**: Applies Hypothetical Document Embeddings (HyDE) and Query Decomposition to break down complex questions into optimal vector search vectors.
