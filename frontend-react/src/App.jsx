@@ -447,6 +447,8 @@ export default function App() {
                 className={`px-6 py-4 leading-relaxed text-[15px] shadow-sm ${
                   msg.sender === 'user'
                     ? 'bg-[var(--user-msg)] text-[#FDFBF7] rounded-[1.5rem] rounded-br-sm whitespace-pre-wrap'
+                    : msg.text === 'New conversation started. How can I help?'
+                    ? 'bg-[var(--sidebar-bg)] border border-[var(--border-color)] text-[var(--text-muted)] rounded-[1.5rem] rounded-bl-sm font-medium'
                     : 'bg-[var(--bot-msg)] text-[var(--text-main)] rounded-[1.5rem] rounded-bl-sm prose prose-sm prose-stone max-w-none'
                 }`}
               >
