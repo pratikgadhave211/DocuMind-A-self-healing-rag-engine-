@@ -231,6 +231,21 @@ export default function App() {
     setIsSidebarOpen(false);
   };
 
+  const deleteSession = (e, sid) => {
+    e.stopPropagation();
+    localStorage.removeItem(`rag_messages_${sid}`);
+    if (sid === sessionId) {
+      const remaining = sessionsList.filter(s => s.id !== sid);
+      if (remaining.length > 0) {
+        switchSession(remaining[0].id);
+      } else {
+        startNewChat();
+      }
+    } else {
+      loadSessions();
+    }
+  };
+
   // ── Initialise session + memory ─────────────────────────────────────────
   useEffect(() => {
     loadSessions();
@@ -388,17 +403,24 @@ export default function App() {
               <h3 className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold mb-3 pl-1">Recent Chats</h3>
               <div className="space-y-1.5 max-h-40 overflow-y-auto pr-2">
                 {sessionsList.map(session => (
-                  <button
+                  <div
                     key={session.id}
-                    onClick={() => switchSession(session.id)}
-                    className={`w-full text-left px-4 py-3 rounded-2xl text-[14px] truncate transition-colors font-medium ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[14px] transition-colors font-medium cursor-pointer group ${
                       session.id === sessionId
                         ? 'bg-[var(--border-color)] text-[var(--text-main)] font-bold'
                         : 'text-[var(--text-muted)] hover:bg-[var(--border-color)]/50 hover:text-[var(--text-main)]'
                     }`}
+                    onClick={() => switchSession(session.id)}
                   >
-                    {session.title}
-                  </button>
+                    <span className="truncate pr-2">{session.title}</span>
+                    <button
+                      onClick={(e) => deleteSession(e, session.id)}
+                      className="text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-[var(--border-color)]"
+                      title="Delete Chat"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

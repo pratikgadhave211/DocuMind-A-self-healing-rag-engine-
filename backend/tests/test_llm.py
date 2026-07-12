@@ -24,7 +24,7 @@ def test_llm():
     }
 
     payload = {
-        "model": "mistralai/ministral-14b-instruct-2512",
+        "model": "z-ai/glm-5.2",
         "messages": [{"role": "user", "content": "Hello! Are you responding?"}],
         "max_tokens": 2048,
         "temperature": 0.15,
@@ -35,9 +35,9 @@ def test_llm():
     }
 
     try:
-        print(f"Sending request to {payload['model']} via NVIDIA API (45s timeout)...")
-        # Added timeout=45 as requested
-        response = requests.post(invoke_url, headers=headers, json=payload, timeout=45)
+        print(f"Sending request to {payload['model']} via NVIDIA API (180s timeout)...")
+        # Added timeout=180 as requested
+        response = requests.post(invoke_url, headers=headers, json=payload, timeout=180)
         response.raise_for_status()
 
         if stream:
@@ -49,7 +49,7 @@ def test_llm():
             print(response.json()["choices"][0]["message"]["content"])
             
     except requests.exceptions.Timeout:
-        print("Error: Request timed out after 45 seconds.")
+        print("Error: Request timed out after 180 seconds.")
     except Exception as e:
         print(f"Error occurred: {e}")
 
