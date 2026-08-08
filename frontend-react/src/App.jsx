@@ -75,9 +75,18 @@ function FileUploadPanel() {
         body: formData,
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        let errorMsg = `Upload failed (HTTP ${res.status})`;
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.detail || errorMsg;
+        } catch (e) {
+          errorMsg += `. Server returned an invalid response. Please check your backend URL configuration.`;
+        }
+        throw new Error(errorMsg);
+      }
 
-      if (!res.ok) throw new Error(data.detail || 'Upload failed');
+      const data = await res.json();
 
       setStatus('success');
       setChunks(data.chunks_loaded);
