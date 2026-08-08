@@ -154,7 +154,7 @@ async def query_rag(request: QueryRequest):
         raise HTTPException(status_code=503, detail="RAG system not initialized")
     
     if not rag_system.vector_index:
-        raise HTTPException(status_code=400, detail="No documents loaded")
+        raise HTTPException(status_code=400, detail="No documents loaded. Please upload your document (e.g. your resume) first before asking questions.")
     
     try:
         result = rag_system.process_query(

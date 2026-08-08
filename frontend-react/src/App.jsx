@@ -74,9 +74,18 @@ function FileUploadPanel() {
         body: formData,
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        let errorMsg = `Upload failed (HTTP ${res.status})`;
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.detail || errorMsg;
+        } catch (e) {
+          errorMsg += `. Server returned an invalid response. Please check your backend URL configuration.`;
+        }
+        throw new Error(errorMsg);
+      }
 
-      if (!res.ok) throw new Error(data.detail || 'Upload failed');
+      const data = await res.json();
 
       setStatus('success');
       setChunks(data.chunks_loaded);
@@ -328,7 +337,14 @@ export default function App() {
         body: JSON.stringify({ query, session_id: sessionId, ...config }),
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        let errorMsg = `HTTP ${res.status}`;
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.detail || errorMsg;
+        } catch (e) {}
+        throw new Error(errorMsg);
+      }
 
       const data = await res.json();
 
@@ -342,7 +358,7 @@ export default function App() {
         {
           id: Date.now() + 1,
           sender: 'bot',
-          text: `Error: ${err.message}. Is the backend running at ${API_BASE_URL}?`,
+          text: `Error: ${err.message}.`,
         },
       ]);
     } finally {

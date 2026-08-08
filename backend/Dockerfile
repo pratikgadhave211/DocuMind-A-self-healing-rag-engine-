@@ -22,4 +22,4 @@ COPY . .
 EXPOSE ${PORT:-8000}
 
 # Run the FastAPI application using uvicorn directly for production (avoids reload=True)
-CMD uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["sh", "-c", "exec uvicorn api_server:app --host 0.0.0.0 --port ${PORT:-8000}"]
