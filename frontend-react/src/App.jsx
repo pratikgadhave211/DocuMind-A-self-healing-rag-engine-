@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const rawApiUrl = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 // ── Small helper components ────────────────────────────────────────────────
 
@@ -74,18 +75,9 @@ function FileUploadPanel() {
         body: formData,
       });
 
-      if (!res.ok) {
-        let errorMsg = `Upload failed (HTTP ${res.status})`;
-        try {
-          const errorData = await res.json();
-          errorMsg = errorData.detail || errorMsg;
-        } catch (e) {
-          errorMsg += `. Server returned an invalid response. Please check your backend URL configuration.`;
-        }
-        throw new Error(errorMsg);
-      }
-
       const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Upload failed');
 
       setStatus('success');
       setChunks(data.chunks_loaded);
@@ -223,7 +215,7 @@ export default function App() {
           const userMsg = msgs.find(m => m.sender === 'user');
           const title = userMsg ? userMsg.text.substring(0, 30) + (userMsg.text.length > 30 ? '...' : '') : 'New Chat';
           list.push({ id: sid, title, timestamp: msgs[0]?.id || 0 });
-        } catch(e) {}
+        } catch (e) { }
       }
     }
     list.sort((a, b) => b.timestamp - a.timestamp);
@@ -270,13 +262,13 @@ export default function App() {
       saved
         ? JSON.parse(saved)
         : [
-            {
-              id: Date.now(),
-              sender: 'bot',
-              text:
-                "Hello! I'm the Self-Healing RAG assistant. My conversation is persisted locally — I'll remember our chat even if you refresh. Upload a PDF or ask me anything!",
-            },
-          ]
+          {
+            id: Date.now(),
+            sender: 'bot',
+            text:
+              "Hello! I'm the Self-Healing RAG assistant. My conversation is persisted locally — I'll remember our chat even if you refresh. Upload a PDF or ask me anything!",
+          },
+        ]
     );
   }, []);
 
@@ -342,7 +334,7 @@ export default function App() {
         try {
           const errorData = await res.json();
           errorMsg = errorData.detail || errorMsg;
-        } catch (e) {}
+        } catch (e) { }
         throw new Error(errorMsg);
       }
 
@@ -371,237 +363,234 @@ export default function App() {
     <div className="flex h-screen bg-[var(--bg-color)] p-2 md:p-4 items-center justify-center font-sans">
       <div className="w-full h-full flex flex-row rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(72,57,51,0.2)] bg-[var(--app-bg)] relative">
 
-      {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div className="absolute inset-0 bg-black/20 z-10 md:hidden" onClick={() => setIsSidebarOpen(false)} />
-      )}
+        {/* Mobile Overlay */}
+        {isSidebarOpen && (
+          <div className="absolute inset-0 bg-black/20 z-10 md:hidden" onClick={() => setIsSidebarOpen(false)} />
+        )}
 
-      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className={`w-72 md:w-80 bg-[var(--sidebar-bg)] border-r border-[var(--border-color)] flex flex-col flex-shrink-0 absolute md:relative z-20 h-full transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        {/* Header */}
-        <div className="p-7 border-b border-[var(--border-color)]">
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2.5">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#logo-gradient)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <defs>
-                <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="var(--accent-orange)" />
-                  <stop offset="100%" stopColor="var(--accent-green)" />
-                </linearGradient>
-              </defs>
-              <path d="M2 12h4l3-9 5 18 3-9h5" />
-            </svg>
-            <span className="drop-shadow-sm">
-              <span className="text-[var(--accent-orange)]">Docu</span><span className="text-[var(--accent-green)]">Mind</span>
-            </span>
-          </h1>
-          <p className="text-[11px] text-[var(--text-muted)] mt-2 font-bold uppercase tracking-widest">Self-Healing RAG Engine</p>
-        </div>
+        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+        <aside className={`w-72 md:w-80 bg-[var(--sidebar-bg)] border-r border-[var(--border-color)] flex flex-col flex-shrink-0 absolute md:relative z-20 h-full transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          {/* Header */}
+          <div className="p-7 border-b border-[var(--border-color)]">
+            <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#logo-gradient)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <defs>
+                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="var(--accent-orange)" />
+                    <stop offset="100%" stopColor="var(--accent-green)" />
+                  </linearGradient>
+                </defs>
+                <path d="M2 12h4l3-9 5 18 3-9h5" />
+              </svg>
+              <span className="drop-shadow-sm">
+                <span className="text-[var(--accent-orange)]">Docu</span><span className="text-[var(--accent-green)]">Mind</span>
+              </span>
+            </h1>
+            <p className="text-[11px] text-[var(--text-muted)] mt-2 font-bold uppercase tracking-widest">Self-Healing RAG Engine</p>
+          </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-7">
-          {/* New chat */}
-          <button
-            onClick={startNewChat}
-            className="w-full flex items-center justify-center gap-2
+          <div className="flex-1 overflow-y-auto p-6 space-y-7">
+            {/* New chat */}
+            <button
+              onClick={startNewChat}
+              className="w-full flex items-center justify-center gap-2
                        bg-[var(--accent-green)] hover:bg-[#798C5A] active:bg-[#68784D]
                        text-white text-[15px] font-semibold py-3.5 px-4 rounded-full
                        shadow-md shadow-[#8BA067]/20 transition-all transform hover:scale-[1.02]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Chat
-          </button>
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              New Chat
+            </button>
 
-          {/* Recent Chats */}
-          {sessionsList.length > 0 && (
-            <div className="pt-2">
-              <h3 className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold mb-3 pl-1">Recent Chats</h3>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-2">
-                {sessionsList.map(session => (
-                  <div
-                    key={session.id}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[14px] transition-colors font-medium cursor-pointer group ${
-                      session.id === sessionId
-                        ? 'bg-[var(--border-color)] text-[var(--text-main)] font-bold'
-                        : 'text-[var(--text-muted)] hover:bg-[var(--border-color)]/50 hover:text-[var(--text-main)]'
-                    }`}
-                    onClick={() => switchSession(session.id)}
-                  >
-                    <span className="truncate pr-2">{session.title}</span>
-                    <button
-                      onClick={(e) => deleteSession(e, session.id)}
-                      className="text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-[var(--border-color)]"
-                      title="Delete Chat"
+            {/* Recent Chats */}
+            {sessionsList.length > 0 && (
+              <div className="pt-2">
+                <h3 className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold mb-3 pl-1">Recent Chats</h3>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-2">
+                  {sessionsList.map(session => (
+                    <div
+                      key={session.id}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[14px] transition-colors font-medium cursor-pointer group ${session.id === sessionId
+                          ? 'bg-[var(--border-color)] text-[var(--text-main)] font-bold'
+                          : 'text-[var(--text-muted)] hover:bg-[var(--border-color)]/50 hover:text-[var(--text-main)]'
+                        }`}
+                      onClick={() => switchSession(session.id)}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
+                      <span className="truncate pr-2">{session.title}</span>
+                      <button
+                        onClick={(e) => deleteSession(e, session.id)}
+                        className="text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-[var(--border-color)]"
+                        title="Delete Chat"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Toggles */}
+            <div className="space-y-4 pt-5 border-t border-[var(--border-color)]">
+              <h3 className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold mb-2 pl-1">Pipeline Config</h3>
+
+              {/* Always show manual override */}
+              <Toggle
+                id="manual_override"
+                label="manual override"
+                checked={config.manual_override}
+                onChange={() => setConfig((prev) => ({ ...prev, manual_override: !prev.manual_override }))}
+                colorClass="peer-checked:bg-[#ef4444]"
+              />
+
+              {/* Conditionally show other toggles */}
+              {config.manual_override && Object.entries(config)
+                .filter(([key]) => key !== 'manual_override')
+                .map(([key, value]) => (
+                  <div key={key} className="pl-4 border-l-2 border-[#EBE5DC]">
+                    <Toggle
+                      id={key}
+                      label={key.replace('enable_', '')}
+                      checked={value}
+                      onChange={() => setConfig((prev) => ({ ...prev, [key]: !prev[key] }))}
+                    />
                   </div>
                 ))}
-              </div>
             </div>
-          )}
 
-          {/* Toggles */}
-          <div className="space-y-4 pt-5 border-t border-[var(--border-color)]">
-            <h3 className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold mb-2 pl-1">Pipeline Config</h3>
-            
-            {/* Always show manual override */}
-            <Toggle
-              id="manual_override"
-              label="manual override"
-              checked={config.manual_override}
-              onChange={() => setConfig((prev) => ({ ...prev, manual_override: !prev.manual_override }))}
-              colorClass="peer-checked:bg-[#ef4444]"
-            />
-
-            {/* Conditionally show other toggles */}
-            {config.manual_override && Object.entries(config)
-              .filter(([key]) => key !== 'manual_override')
-              .map(([key, value]) => (
-                <div key={key} className="pl-4 border-l-2 border-[#EBE5DC]">
-                  <Toggle
-                    id={key}
-                    label={key.replace('enable_', '')}
-                    checked={value}
-                    onChange={() => setConfig((prev) => ({ ...prev, [key]: !prev[key] }))}
-                  />
-                </div>
-            ))}
+            {/* File Upload */}
+            <FileUploadPanel />
           </div>
 
-          {/* File Upload */}
-          <FileUploadPanel />
-        </div>
 
+        </aside>
 
-      </aside>
+        {/* ── Chat area ────────────────────────────────────────────────────── */}
+        <main className="flex-1 flex flex-col min-w-0 bg-[var(--app-bg)] relative">
+          {/* Mobile Header */}
+          <div className="md:hidden flex items-center justify-between p-4 border-b border-[var(--border-color)] bg-[var(--app-bg)] z-10 shadow-sm">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-[var(--text-main)] active:scale-95 transition-transform">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <span className="font-extrabold tracking-tight flex items-center gap-1.5 text-lg">
+              <span className="text-[var(--accent-orange)]">Docu</span><span className="text-[var(--accent-green)]">Mind</span>
+            </span>
+            <div className="w-8"></div>
+          </div>
 
-      {/* ── Chat area ────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[var(--app-bg)] relative">
-        {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between p-4 border-b border-[var(--border-color)] bg-[var(--app-bg)] z-10 shadow-sm">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-[var(--text-main)] active:scale-95 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          </button>
-          <span className="font-extrabold tracking-tight flex items-center gap-1.5 text-lg">
-            <span className="text-[var(--accent-orange)]">Docu</span><span className="text-[var(--accent-green)]">Mind</span>
-          </span>
-          <div className="w-8"></div>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 md:px-12 space-y-7">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col max-w-[78%] ${
-                msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
-              }`}
-            >
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-6 md:px-12 space-y-7">
+            {messages.map((msg) => (
               <div
-                className={`px-6 py-4 leading-relaxed text-[15px] shadow-sm ${
-                  msg.sender === 'user'
-                    ? 'bg-[var(--user-msg)] text-[#FDFBF7] rounded-[1.5rem] rounded-br-sm whitespace-pre-wrap'
-                    : msg.text === 'New conversation started. How can I help?'
-                    ? 'bg-[var(--sidebar-bg)] border border-[var(--border-color)] text-[var(--text-muted)] rounded-[1.5rem] rounded-bl-sm font-medium'
-                    : 'bg-[var(--bot-msg)] text-[var(--text-main)] rounded-[1.5rem] rounded-bl-sm prose prose-sm prose-stone max-w-none'
-                }`}
+                key={msg.id}
+                className={`flex flex-col max-w-[78%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
+                  }`}
               >
-                {msg.sender === 'user' ? (
-                  msg.text
-                ) : (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                <div
+                  className={`px-6 py-4 leading-relaxed text-[15px] shadow-sm ${msg.sender === 'user'
+                      ? 'bg-[var(--user-msg)] text-[#FDFBF7] rounded-[1.5rem] rounded-br-sm whitespace-pre-wrap'
+                      : msg.text === 'New conversation started. How can I help?'
+                        ? 'bg-[var(--sidebar-bg)] border border-[var(--border-color)] text-[var(--text-muted)] rounded-[1.5rem] rounded-bl-sm font-medium'
+                        : 'bg-[var(--bot-msg)] text-[var(--text-main)] rounded-[1.5rem] rounded-bl-sm prose prose-sm prose-stone max-w-none'
+                    }`}
+                >
+                  {msg.sender === 'user' ? (
+                    msg.text
+                  ) : (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                  )}
+                </div>
+
+                {msg.metadata && (
+                  <div className="flex flex-wrap gap-4 mt-2.5 text-[12px] font-medium text-[var(--text-muted)]">
+                    {msg.metadata.processing_time != null && (
+                      <span className="flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        {msg.metadata.processing_time}s
+                      </span>
+                    )}
+                    {msg.metadata.techniques_used?.length > 0 && (
+                      <span className="flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                        </svg>
+                        {msg.metadata.techniques_used.join(' · ')}
+                      </span>
+                    )}
+                    {msg.metadata.final_documents != null && (
+                      <span>{msg.metadata.final_documents} docs used</span>
+                    )}
+                  </div>
+                )}
+
+                {msg.sender === 'bot' && msg.originalQuery && !msg.feedbackSubmitted && (
+                  <div className="flex gap-4 mt-3 ml-2 items-center">
+                    <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wide">Was this helpful?</span>
+                    <button onClick={() => submitFeedback(msg.originalQuery, msg.text, true, msg.id)} className="text-[var(--text-muted)] hover:text-[var(--accent-green)] transition-transform hover:scale-110" title="Good answer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                    </button>
+                    <button onClick={() => submitFeedback(msg.originalQuery, msg.text, false, msg.id)} className="text-[var(--text-muted)] hover:text-red-500 transition-transform hover:scale-110" title="Bad answer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg>
+                    </button>
+                  </div>
+                )}
+                {msg.sender === 'bot' && msg.feedbackSubmitted && (
+                  <div className="flex gap-2 mt-3 ml-2 items-center text-[12px] font-bold text-[var(--accent-green)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Feedback recorded!
+                  </div>
                 )}
               </div>
+            ))}
 
-              {msg.metadata && (
-                <div className="flex flex-wrap gap-4 mt-2.5 text-[12px] font-medium text-[var(--text-muted)]">
-                  {msg.metadata.processing_time != null && (
-                    <span className="flex items-center gap-1.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                      </svg>
-                      {msg.metadata.processing_time}s
-                    </span>
-                  )}
-                  {msg.metadata.techniques_used?.length > 0 && (
-                    <span className="flex items-center gap-1.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                      </svg>
-                      {msg.metadata.techniques_used.join(' · ')}
-                    </span>
-                  )}
-                  {msg.metadata.final_documents != null && (
-                    <span>{msg.metadata.final_documents} docs used</span>
-                  )}
-                </div>
-              )}
-              
-              {msg.sender === 'bot' && msg.originalQuery && !msg.feedbackSubmitted && (
-                <div className="flex gap-4 mt-3 ml-2 items-center">
-                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wide">Was this helpful?</span>
-                  <button onClick={() => submitFeedback(msg.originalQuery, msg.text, true, msg.id)} className="text-[var(--text-muted)] hover:text-[var(--accent-green)] transition-transform hover:scale-110" title="Good answer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
-                  </button>
-                  <button onClick={() => submitFeedback(msg.originalQuery, msg.text, false, msg.id)} className="text-[var(--text-muted)] hover:text-red-500 transition-transform hover:scale-110" title="Bad answer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg>
-                  </button>
-                </div>
-              )}
-              {msg.sender === 'bot' && msg.feedbackSubmitted && (
-                <div className="flex gap-2 mt-3 ml-2 items-center text-[12px] font-bold text-[var(--accent-green)]">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  Feedback recorded!
-                </div>
-              )}
-            </div>
-          ))}
+            {isLoading && (
+              <div className="mr-auto">
+                <TypingDots />
+              </div>
+            )}
 
-          {isLoading && (
-            <div className="mr-auto">
-              <TypingDots />
-            </div>
-          )}
+            <div ref={chatEndRef} />
+          </div>
 
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="px-4 py-5 md:px-12 border-t border-[var(--border-color)] bg-[var(--app-bg)] relative z-10">
-          <form
-            onSubmit={sendMessage}
-            className="flex items-center max-w-4xl mx-auto
+          {/* Input */}
+          <div className="px-4 py-5 md:px-12 border-t border-[var(--border-color)] bg-[var(--app-bg)] relative z-10">
+            <form
+              onSubmit={sendMessage}
+              className="flex items-center max-w-4xl mx-auto
                        bg-[var(--sidebar-bg)] border-2 border-[var(--border-color)] rounded-full
                        px-3 py-2.5 focus-within:border-[var(--accent-orange)] focus-within:bg-[#FDFBF7]
                        transition-all shadow-sm"
-          >
-            <input
-              type="text"
-              value={inputQuery}
-              onChange={(e) => setInputQuery(e.target.value)}
-              placeholder="Ask anything about your documents…"
-              className="flex-1 bg-transparent border-none text-[var(--text-main)] placeholder-[var(--text-muted)]
+            >
+              <input
+                type="text"
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
+                placeholder="Ask anything about your documents…"
+                className="flex-1 bg-transparent border-none text-[var(--text-main)] placeholder-[var(--text-muted)]
                          px-4 py-2.5 outline-none text-[15px] font-medium"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !inputQuery.trim()}
-              className="bg-[var(--accent-orange)] hover:bg-[#E06A4B] disabled:bg-[var(--border-color)] disabled:text-[var(--text-muted)]
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !inputQuery.trim()}
+                className="bg-[var(--accent-orange)] hover:bg-[#E06A4B] disabled:bg-[var(--border-color)] disabled:text-[var(--text-muted)]
                          disabled:cursor-not-allowed text-white rounded-full
                          p-3 ml-2 transition-transform transform hover:scale-105 active:scale-95 flex items-center justify-center
                          h-[48px] w-[48px] flex-shrink-0 shadow-md shadow-[#F57D5C]/30"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
-          </form>
-        </div>
-      </main>
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </main>
       </div>
     </div>
   );
